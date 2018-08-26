@@ -1,6 +1,6 @@
 {
   "name": "redux-wiretap",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "redux listener for listening in on actions",
   "keywords": [],
   "main": "dist/redux-wiretap.umd.js",

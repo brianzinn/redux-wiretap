@@ -1,4 +1,5 @@
-export type HandledResult = {
+// internal type for now
+type HandledResult = {
   handled: boolean
   handlers: number
   errors: any[]
@@ -11,8 +12,8 @@ let handlers: Array<(action: any) => boolean> = []
  * @param handler
  */
 export const registerHandler = (handler: (action: { type: string }) => boolean) => {
-  if (typeof handler !== "function") {
-    console.error("parameter handler is not a function", handler)
+  if (typeof handler !== 'function') {
+    console.error('parameter handler is not a function', handler)
   } else {
     handlers.push(handler)
   }
@@ -24,7 +25,7 @@ export const registerHandler = (handler: (action: { type: string }) => boolean) 
  * @param handler
  */
 export const removeHandler = (handler: (action: { type: string }) => boolean) => {
-  if (typeof handler !== "function") {
+  if (typeof handler !== 'function') {
     console.error("cannot unregister a handler that's not a function", handler)
     return
   }
@@ -33,7 +34,7 @@ export const removeHandler = (handler: (action: { type: string }) => boolean) =>
   if (idx !== -1) {
     handlers.splice(idx, 1)
   } else {
-    console.warn("handler not removed (was not found registered)..")
+    console.warn('handler not removed (was not found registered)..')
   }
 }
 
@@ -56,24 +57,21 @@ const handleAction = (action: { type: string }): HandledResult => {
   return result
 }
 
-// for different versions of redux router.  Should make this an option somehow or remove.
-let skipActions = new Set(["LOCATION_CHANGE", "@@router/LOCATION_CHANGE"])
-
+// for different versions of redux router.  Removed for now, would like to make this a dynamic list.
+// let skipActions = new Set(['LOCATION_CHANGE', '@@router/LOCATION_CHANGE'])
 export default (store: any) => (next: any) => (action: any) => {
   // intercept all actions and pass-through.
-  if (!skipActions.has(action.type)) {
-    const handledResult = handleAction(action)
+  const handledResult: HandledResult = handleAction(action)
 
-    if (handledResult.errors.length === 0) {
-      // console.log(`babylonJS type: ${action.type} handled: ${handledResult.handled} w/o errors by ${handledResult.handlers}`)
-    } else {
-      handledResult.errors.forEach(error => {
-        console.error(`error occured in redux-wiretap middleware with type ${action.type}`, error)
-      })
-    }
+  if (handledResult.errors.length !== 0) {
+    handledResult.errors.forEach(error => {
+      console.error(`error occured in redux-wiretap middleware with type ${action.type}`, error)
+    })
+  } // else {
+    // console.log(`redux-wiretap intercepted - type: ${action.type} handled: ${handledResult.handled} w/o errors by ${handledResult.handlers}`)
+  // }
 
-    // TODO: add possibly failure or # handlers.  possibly error if there are no handlers when we add filtering...
-    action.handled = handledResult.handled
-  }
+  action.handled = handledResult.handled
+
   return next(action)
 }
