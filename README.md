@@ -1,7 +1,7 @@
 # redux-wiretap
 This is a simple project used to listen in on redux messages and take action.  Listeners can be automatically added/removed. Useful for attaching part of your page to intercept messages and update.  ie: WebGL canvas to update based on actions.
 
-In your top-level component mount/unmount you need to register and deregister your middleware handlers.  So, we are bringing the redux actions right into our component - not via props, which is generally the correct way.
+If you are using React then in your component mount/unmount is where you would likely register and deregister your middleware handlers.  So, we are bringing the redux actions right into our code - not via props, which is generally the correct way.  If props are unavailable to you then you can use this middleware to synchronize or in a non-React environment.
 
 ### Install
 
@@ -25,10 +25,14 @@ import middleware from 'redux-wiretap'
 Additionally, you can import the transpiled modules from `dist/lib` in case you have a modular library:
 
 ```javascript
-import middleware from 'redux-wiretap/dist/lib/??'
+import middleware from 'redux-wiretap/dist/lib/redux-wiretap'
 ```
 
-## Usage
+# Usage
+
+## Store
+Example to add the redux-wiretap to redux createStore:
+
 ```javascript
 import { applyMiddleware, compose, createStore } from 'redux'
 import thunk from 'redux-thunk'
@@ -38,15 +42,91 @@ export default (initialState = {}) => {
   // ======================================================
   // Middleware Configuration
   // ======================================================
-  const middleware = [thunk, reduxWiretap]
+  const middleware = [
+    thunk,
+    reduxWiretap
+  ]
  
   return createStore(
-    ...,
+    rootReducer,
     initialState,
     compose(
       applyMiddleware(...middleware),
       ...enhancers
     )
   )
+}
+```
+## Component
+You may end up with something like this in TypeScript, I've included this as an example using strongly typed handlers (JavaScript below).
+```typescript
+import * as React from 'react';
+import { RouteComponentProps } from 'react-router-dom';
+import { registerHandler, removeHandler } from 'redux-wiretap';
+import { ImportedAction } from '../actions'
+
+class Example extends React.Component<RouteComponentProps<{}>, {}> {
+  componentDidMount() {
+    this.defaultHandlers = new Map<String, (action: { type: String }) => boolean>([
+      ['ACTION_1', (action: ImportedAction) => {
+        // logic to handle within our component with access to action properties.
+        return true;
+      }]
+    ]);
+
+    this.actionHandler = (action): boolean => {
+      if (this.defaultHandlers.has(action.type)) {
+        // console.log(`calling default handler for ${action.type}`);
+        const defaultHandler = this.defaultHandlers.get(action.type);
+        return defaultHandler !== undefined && defaultHandler(action);
+      } else {
+        return false;
+      }
+    };
+
+    registerHandler(this.actionHandler);
+  }
+
+  componentWillUnmount() {
+    removeHandler(this.actionHandler);
+  }
+}
+```
+Javascript of essentially the same code as above.
+```javascript
+import * as React from 'react';
+import { RouteComponentProps } from 'react-router-dom';
+import { registerHandler, removeHandler } from 'redux-wiretap';
+
+class Example extends React.Component<RouteComponentProps<{}>, {}> {
+  componentDidMount() {
+    this.actionHandlersMap = {
+        'ACTION_1': (action) => {
+            // logic here for 'ACTION_1'
+            return true;
+        },
+        'ACTION_2': (action) => {
+            // logic here for 'ACTION_2'
+            return true; // indicates to middleware that it was handled
+        }
+    };
+
+    this.actionHandler = (action) => {
+      if (this.actionHandlersMap[action.type] === undefined) {
+        // probably you will want to remove this logging, but can track unhandled calls here as well.
+        console.log(`no handler defined for '${action.type}'`, action);
+        return false;
+      } else {
+        const defaultHandler = this.actionHandlersMap[action.type];
+        return defaultHandler(action);
+      }
+    }
+
+    registerHandler(this.actionHandler);
+  }
+
+  componentWillUnmount() {
+    removeHandler(this.actionHandler);
+  }
 }
 ```

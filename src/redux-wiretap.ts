@@ -68,7 +68,7 @@ export default (store: any) => (next: any) => (action: any) => {
       console.error(`error occured in redux-wiretap middleware with type ${action.type}`, error)
     })
   } // else {
-    // console.log(`redux-wiretap intercepted - type: ${action.type} handled: ${handledResult.handled} w/o errors by ${handledResult.handlers}`)
+  // console.log(`redux-wiretap intercepted - type: ${action.type} handled: ${handledResult.handled} w/o errors by ${handledResult.handlers}`)
   // }
 
   action.handled = handledResult.handled
